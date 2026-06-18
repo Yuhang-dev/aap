@@ -1,0 +1,33 @@
+phase: 1
+description: "Establish QA-flat/alignment-collapsing sparsity band for Qwen2.5-7B-Instruct."
+model:
+  instruct: Qwen/Qwen2.5-7B-Instruct
+  base: Qwen/Qwen2.5-7B
+calibration:
+  task_dataset: allenai/c4
+  task_subset: en
+  num_sequences: 128
+  sequence_length: 2048
+pruning:
+  algorithm: wanda
+  calibration: c4
+  sparsities: [0.10, 0.20, 0.30, 0.40, 0.50, 0.60, 0.70]
+  semi_structured: ["2:4"]
+evaluation:
+  qa:
+    - wikitext2_ppl
+    - arc_challenge
+    - hellaswag
+    - winogrande
+    - mmlu
+  alignment:
+    - bcr_hh_rlhf
+    - harmbench_or_advbench
+    - xstest_fpr
+    - ifeval
+    - truthfulqa_mc
+notes:
+  - "XSTest-FPR is mandatory to detect over-refusal."
+  - "Do not run AlpacaEval in Phase 1."
+  - "Phase 1 is the first GPU phase."
+
