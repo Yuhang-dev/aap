@@ -34,6 +34,7 @@ def main() -> None:
     parser.add_argument("--prune-method", default="wanda", choices=["wanda", "magnitude", "sparsegpt"])
     parser.add_argument("--use-variant", action="store_true")
     parser.add_argument("--eval-ppl", action="store_true")
+    parser.add_argument("--ppl-max-samples", type=int, default=None)
     parser.add_argument("--save-model", default=None)
     parser.add_argument("--out", required=True)
     args = parser.parse_args()
@@ -51,6 +52,7 @@ def main() -> None:
         prune_method=args.prune_method,
         use_variant=args.use_variant,
         eval_ppl=args.eval_ppl,
+        ppl_max_samples=args.ppl_max_samples,
         save_model=optional_path(args.save_model),
         out=Path(args.out),
     )
@@ -60,4 +62,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

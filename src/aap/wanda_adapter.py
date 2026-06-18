@@ -32,6 +32,7 @@ class WandaRunConfig:
     prune_method: str
     use_variant: bool
     eval_ppl: bool
+    ppl_max_samples: int | None
     save_model: Path | None
     out: Path
 
@@ -192,6 +193,55 @@ def get_c4_calibration_loader(nsamples: int, seed: int, seqlen: int, tokenizer):
     return loader
 
 
+def load_wikitext2_test_encoding(tokenizer, cache_dir: str | None = None):
+    from datasets import load_dataset
+    from huggingface_hub import hf_hub_download
+
+    parquet_path = hf_hub_download(
+        repo_id="Salesforce/wikitext",
+        filename="wikitext-2-raw-v1/test-00000-of-00001.parquet",
+        repo_type="dataset",
+        cache_dir=cache_dir,
+    )
+    dataset = load_dataset("parquet", data_files={"test": parquet_path}, split="test")
+    text = "\n\n".join(dataset["text"])
+    return tokenizer(text, return_tensors="pt")
+
+
+def eval_wikitext2_ppl_aap(model, tokenizer, device, cache_dir: str | None = None, max_samples: int | None = None) -> float:
+    import torch
+    import torch.nn as nn
+
+    print("evaluating on Salesforce/wikitext wikitext-2-raw-v1 test")
+    testenc = load_wikitext2_test_encoding(tokenizer, cache_dir=cache_dir).input_ids
+    nsamples = testenc.numel() // model.seqlen
+    if max_samples is not None:
+        nsamples = min(nsamples, max_samples)
+    if nsamples <= 0:
+        raise RuntimeError("WikiText-2 test encoding is shorter than one evaluation segment")
+
+    nlls = []
+    loss_fct = nn.CrossEntropyLoss()
+    with torch.no_grad():
+        for idx in range(nsamples):
+            if idx % 25 == 0:
+                print(f"ppl sample {idx}/{nsamples}")
+            inputs = testenc[:, idx * model.seqlen : (idx + 1) * model.seqlen].to(device)
+            logits = model(inputs).logits
+            shift_logits = logits[:, :-1, :].contiguous()
+            shift_labels = inputs[:, 1:]
+            loss = loss_fct(
+                shift_logits.reshape(-1, shift_logits.size(-1)),
+                shift_labels.reshape(-1),
+            )
+            neg_log_likelihood = loss.float() * model.seqlen
+            nlls.append(neg_log_likelihood)
+
+    ppl = torch.exp(torch.stack(nlls).sum() / (nsamples * model.seqlen))
+    torch.cuda.empty_cache()
+    return float(ppl.item())
+
+
 def prune_wanda_aap(args, model, tokenizer, device, prune_n: int = 0, prune_m: int = 0) -> None:
     import torch
 
@@ -308,7 +358,6 @@ def run_wanda(config: WandaRunConfig) -> dict[str, Any]:
     import torch
 
     add_wanda_to_path(config.wanda_dir)
-    from lib.eval import eval_ppl
     from lib.prune import prune_magnitude, prune_sparsegpt
 
     np.random.seed(config.seed)
@@ -352,7 +401,15 @@ def run_wanda(config: WandaRunConfig) -> dict[str, Any]:
     actual_sparsity = check_sparsity(model)
     ppl = None
     if config.eval_ppl:
-        ppl = float(eval_ppl(args, model, tokenizer, device))
+        ppl = float(
+            eval_wikitext2_ppl_aap(
+                model,
+                tokenizer,
+                device,
+                cache_dir=config.cache_dir,
+                max_samples=config.ppl_max_samples,
+            )
+        )
 
     if config.save_model:
         config.save_model.mkdir(parents=True, exist_ok=True)
@@ -370,6 +427,7 @@ def run_wanda(config: WandaRunConfig) -> dict[str, Any]:
         "prune_method": config.prune_method,
         "actual_sparsity": actual_sparsity,
         "wikitext2_ppl": ppl,
+        "ppl_max_samples": config.ppl_max_samples,
         "runtime_seconds": time.time() - started,
         "saved_model": str(config.save_model) if config.save_model else None,
         "wanda_dir": str(config.wanda_dir),

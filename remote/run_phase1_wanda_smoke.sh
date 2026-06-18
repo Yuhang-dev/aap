@@ -9,6 +9,7 @@ export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-$HF_HOME/datasets}"
 export TRANSFORMERS_CACHE="${TRANSFORMERS_CACHE:-$HF_HOME/transformers}"
 export TORCH_HOME="${TORCH_HOME:-$DATA_DISK/torch_cache}"
 export TOKENIZERS_PARALLELISM="${TOKENIZERS_PARALLELISM:-false}"
+export OMP_NUM_THREADS=8
 
 cd "$AAP_ROOT"
 source "$AAP_ROOT/remote/common.sh"
@@ -27,5 +28,5 @@ python scripts/run_phase1_wanda_once.py \
   --sparsity-type unstructured \
   --prune-method wanda \
   --eval-ppl \
+  --ppl-max-samples 16 \
   --out outputs/phase1/wanda_smoke_qwen2p5_7b_10p.json
-
