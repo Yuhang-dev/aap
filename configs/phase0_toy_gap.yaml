@@ -1,0 +1,11 @@
+dim: 12
+k: 3
+beta: 0.1
+condition_number: 20.0
+substantial_gap: 0.02
+gate_min_gap: 0.02
+gate_min_mask_diff_rate: 0.25
+rhos: [0.0, 0.1, 0.25, 0.4, 0.55, 0.7, 0.85]
+angles_degrees: [0, 15, 30, 45, 60, 75, 90]
+seeds: [0, 1, 2, 3, 4, 5, 6, 7]
+
