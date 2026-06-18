@@ -13,17 +13,21 @@ cd /root/autodl-tmp
 git clone <repo-url> aap
 cd /root/autodl-tmp/aap
 conda activate pbp
-python -m pip install -e .
+python -m pip install -e . --no-build-isolation
 ```
 
 If copying files manually instead of using git, place this project at
 `/root/autodl-tmp/aap` before running commands.
+
+For Phase 0, editable install is optional. If the package mirror cannot resolve
+build dependencies, use `PYTHONPATH` as shown below.
 
 ## Phase 0 Toy Gap
 
 ```bash
 cd /root/autodl-tmp/aap
 conda activate pbp
+export PYTHONPATH=/root/autodl-tmp/aap/src:${PYTHONPATH:-}
 python scripts/run_phase0_toy_gap.py \
   --config configs/phase0_toy_gap.yaml \
   --out-dir outputs/phase0_toy_gap
@@ -55,4 +59,3 @@ The remote cache already includes:
 Qwen/Qwen2.5-7B
 Qwen/Qwen2.5-7B-Instruct
 ```
-

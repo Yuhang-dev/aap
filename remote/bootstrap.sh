@@ -3,5 +3,4 @@ set -euo pipefail
 
 cd /root/autodl-tmp/aap
 conda activate pbp
-python -m pip install -e .
-
+python -m pip install -e . --no-build-isolation

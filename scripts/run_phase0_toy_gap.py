@@ -1,10 +1,16 @@
 from __future__ import annotations
 
 import argparse
+import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SRC_DIR = REPO_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
 from aap.io import ensure_dir, read_yaml, write_json, write_matrix_csv
 from aap.phase0 import summarize_gate, sweep_toy_gap
@@ -146,4 +152,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
