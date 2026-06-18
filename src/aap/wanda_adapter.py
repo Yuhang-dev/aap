@@ -153,7 +153,6 @@ def prepare_calibration_input(model, dataloader, device, nsamples: int):
 
 
 def get_c4_calibration_loader(nsamples: int, seed: int, seqlen: int, tokenizer):
-    import torch
     from datasets import load_dataset
 
     dataset = load_dataset(
@@ -161,22 +160,35 @@ def get_c4_calibration_loader(nsamples: int, seed: int, seqlen: int, tokenizer):
         "en",
         data_files={"train": "en/c4-train.00000-of-01024.json.gz"},
         split="train",
+        streaming=True,
     )
+    dataset = dataset.shuffle(seed=seed, buffer_size=max(1000, nsamples * 32))
 
     rng = random.Random(seed)
     loader = []
-    for _ in range(nsamples):
-        while True:
-            row_idx = rng.randint(0, len(dataset) - 1)
-            encoded = tokenizer(dataset[row_idx]["text"], return_tensors="pt")
-            if encoded.input_ids.shape[1] > seqlen:
-                break
+    attempts = 0
+    max_attempts = max(10000, nsamples * 1000)
+    for row in dataset:
+        attempts += 1
+        if attempts > max_attempts:
+            break
+        encoded = tokenizer(row["text"], return_tensors="pt")
+        if encoded.input_ids.shape[1] <= seqlen:
+            continue
         start = rng.randint(0, encoded.input_ids.shape[1] - seqlen - 1)
         end = start + seqlen
         inp = encoded.input_ids[:, start:end]
         target = inp.clone()
         target[:, :-1] = -100
         loader.append((inp, target))
+        if len(loader) == nsamples:
+            return loader
+
+    if len(loader) != nsamples:
+        raise RuntimeError(
+            f"collected {len(loader)} C4 calibration samples after {attempts} attempts, "
+            f"expected {nsamples}"
+        )
     return loader
 
 
