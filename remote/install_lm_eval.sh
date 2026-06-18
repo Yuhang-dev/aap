@@ -18,10 +18,26 @@ activate_pbp_if_needed
 
 mkdir -p "$PIP_CACHE_DIR" "$AAP_ROOT/external"
 
+install_with_current_index() {
+  python -m pip install "$@"
+}
+
+install_with_pypi_index() {
+  python -m pip install -i https://pypi.org/simple "$@"
+}
+
 set +e
-python -m pip install "lm_eval[hf]"
+install_with_current_index "lm_eval[hf]"
 status=$?
 set -e
+
+if [[ "$status" -ne 0 ]]; then
+  echo "pip install lm_eval[hf] failed on the configured index; retrying with official PyPI"
+  set +e
+  install_with_pypi_index "lm_eval[hf]"
+  status=$?
+  set -e
+fi
 
 if [[ "$status" -ne 0 ]]; then
   echo "pip install lm_eval[hf] failed; falling back to official GitHub repo"
@@ -31,8 +47,14 @@ if [[ "$status" -ne 0 ]]; then
   else
     git -C "$lm_eval_dir" pull --ff-only
   fi
-  python -m pip install -e "$lm_eval_dir[hf]" --no-build-isolation
+  set +e
+  install_with_current_index -e "$lm_eval_dir[hf]" --no-build-isolation
+  status=$?
+  set -e
+  if [[ "$status" -ne 0 ]]; then
+    echo "editable install failed on the configured index; retrying editable install with official PyPI"
+    install_with_pypi_index -e "$lm_eval_dir[hf]" --no-build-isolation
+  fi
 fi
 
 python scripts/phase1_eval_preflight.py
-
