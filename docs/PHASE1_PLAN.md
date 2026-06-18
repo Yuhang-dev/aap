@@ -95,6 +95,23 @@ The smoke uses `nsamples=8` and `seqlen=2048`, prunes 10% unstructured weights,
 and evaluates WikiText-2 perplexity in the same process. It does not save a full
 pruned 7B model.
 
+## Cleanup Failed Dataset Cache
+
+If an old failed loader created redundant dataset cache files, inspect first:
+
+```bash
+bash remote/cleanup_failed_dataset_cache.sh
+```
+
+Then delete only the listed dataset-builder candidates:
+
+```bash
+bash remote/cleanup_failed_dataset_cache.sh --delete
+```
+
+This script refuses to clean outside `/root/autodl-tmp` and does not touch
+Hugging Face model caches.
+
 ## Sweep
 
 Initial Phase 1 matrix:
