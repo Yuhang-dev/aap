@@ -153,3 +153,25 @@ outputs/phase1/wanda_ppl_sweep/qwen2p5_7b_dense.json
 ```
 
 Use this as the reference for the Phase 1 QA preservation gate.
+
+## BCR Alignment Probe
+
+After the PPL sweep, run a small BCR smoke:
+
+```bash
+bash remote/run_phase1_bcr_smoke.sh
+cat outputs/phase1/bcr/wanda_0p30_metrics_smoke.json
+```
+
+If the smoke passes, run BCR on the PPL-selected band:
+
+```bash
+bash remote/run_phase1_bcr_band.sh
+cat outputs/phase1/bcr/wanda_0p30_metrics.json
+cat outputs/phase1/bcr/wanda_0p40_metrics.json
+cat outputs/phase1/bcr/wanda_0p50_metrics.json
+```
+
+This BCR probe is not the full Phase 1 alignment suite, but it is the cheapest
+way to check whether preference boundary crossing appears in the likely
+operating band.
