@@ -20,6 +20,7 @@ from aap.wanda_adapter import (
     check_sparsity,
     load_model_and_tokenizer,
     prune_wanda_aap,
+    torch_dtype_from_name,
 )
 
 
@@ -29,6 +30,25 @@ def model_device(model):
     if hasattr(model, "hf_device_map") and "lm_head" in model.hf_device_map:
         return torch.device(model.hf_device_map["lm_head"])
     return next(model.parameters()).device
+
+
+def load_saved_model_and_tokenizer(model_path: str, cache_dir: str | None, dtype: str):
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+
+    kwargs = {
+        "torch_dtype": torch_dtype_from_name(dtype),
+        "device_map": "auto",
+        "low_cpu_mem_usage": True,
+    }
+    if cache_dir:
+        kwargs["cache_dir"] = cache_dir
+    model = AutoModelForCausalLM.from_pretrained(model_path, **kwargs)
+    model.eval()
+    tok_kwargs = {"use_fast": False}
+    if cache_dir:
+        tok_kwargs["cache_dir"] = cache_dir
+    tokenizer = AutoTokenizer.from_pretrained(model_path, **tok_kwargs)
+    return model, tokenizer
 
 
 def main() -> None:
@@ -46,6 +66,8 @@ def main() -> None:
     parser.add_argument("--references", default="outputs/phase1/bcr/reference_margins.jsonl")
     parser.add_argument("--max-samples", type=int, default=None)
     parser.add_argument("--max-length", type=int, default=4096)
+    parser.add_argument("--pruned-model", default=None, help="Load an existing pruned model instead of pruning.")
+    parser.add_argument("--save-pruned-model", default=None, help="Save the pruned model for reuse.")
     parser.add_argument("--out-margins", required=True)
     parser.add_argument("--out-metrics", required=True)
     args = parser.parse_args()
@@ -55,41 +77,50 @@ def main() -> None:
     reference_rows = read_jsonl(args.references)
     reference_by_id = {str(row["id"]): row for row in reference_rows}
 
-    config = WandaRunConfig(
-        wanda_dir=Path(args.wanda_dir),
-        model=args.model,
-        cache_dir=args.cache_dir,
-        dtype=args.dtype,
-        seed=args.seed,
-        nsamples=args.nsamples,
-        seqlen=args.seqlen,
-        sparsity_ratio=args.sparsity_ratio,
-        sparsity_type=args.sparsity_type,
-        prune_method="wanda",
-        use_variant=False,
-        eval_ppl=False,
-        ppl_max_samples=None,
-        save_model=None,
-        out=Path(args.out_metrics),
-    )
-    model, tokenizer = load_model_and_tokenizer(config)
-
-    if args.sparsity_type != "unstructured":
-        prune_n, prune_m = [int(part) for part in args.sparsity_type.split(":")]
+    if args.pruned_model:
+        model, tokenizer = load_saved_model_and_tokenizer(args.pruned_model, args.cache_dir, args.dtype)
+        actual_sparsity = check_sparsity(model)
     else:
-        prune_n, prune_m = 0, 0
-    if args.sparsity_ratio:
-        prune_args = type("Args", (), {})()
-        prune_args.seed = args.seed
-        prune_args.nsamples = args.nsamples
-        prune_args.sparsity_ratio = args.sparsity_ratio
-        prune_args.sparsity_type = args.sparsity_type
-        prune_args.prune_method = "wanda"
-        prune_args.cache_dir = args.cache_dir
-        prune_args.use_variant = False
-        prune_wanda_aap(prune_args, model, tokenizer, model_device(model), prune_n=prune_n, prune_m=prune_m)
+        config = WandaRunConfig(
+            wanda_dir=Path(args.wanda_dir),
+            model=args.model,
+            cache_dir=args.cache_dir,
+            dtype=args.dtype,
+            seed=args.seed,
+            nsamples=args.nsamples,
+            seqlen=args.seqlen,
+            sparsity_ratio=args.sparsity_ratio,
+            sparsity_type=args.sparsity_type,
+            prune_method="wanda",
+            use_variant=False,
+            eval_ppl=False,
+            ppl_max_samples=None,
+            save_model=None,
+            out=Path(args.out_metrics),
+        )
+        model, tokenizer = load_model_and_tokenizer(config)
 
-    actual_sparsity = check_sparsity(model)
+        if args.sparsity_type != "unstructured":
+            prune_n, prune_m = [int(part) for part in args.sparsity_type.split(":")]
+        else:
+            prune_n, prune_m = 0, 0
+        if args.sparsity_ratio:
+            prune_args = type("Args", (), {})()
+            prune_args.seed = args.seed
+            prune_args.nsamples = args.nsamples
+            prune_args.sparsity_ratio = args.sparsity_ratio
+            prune_args.sparsity_type = args.sparsity_type
+            prune_args.prune_method = "wanda"
+            prune_args.cache_dir = args.cache_dir
+            prune_args.use_variant = False
+            prune_wanda_aap(prune_args, model, tokenizer, model_device(model), prune_n=prune_n, prune_m=prune_m)
+
+        actual_sparsity = check_sparsity(model)
+        if args.save_pruned_model:
+            save_path = Path(args.save_pruned_model)
+            save_path.mkdir(parents=True, exist_ok=True)
+            model.save_pretrained(save_path)
+            tokenizer.save_pretrained(save_path)
     device = model_device(model)
     rows = []
     for idx, record in enumerate(records):
@@ -140,6 +171,8 @@ def main() -> None:
             "sparsity_ratio_target": args.sparsity_ratio,
             "actual_sparsity": actual_sparsity,
             "num_eval_examples": len(records),
+            "pruned_model": args.pruned_model,
+            "saved_pruned_model": args.save_pruned_model,
         }
     )
     write_json(args.out_metrics, metrics)
@@ -148,4 +181,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

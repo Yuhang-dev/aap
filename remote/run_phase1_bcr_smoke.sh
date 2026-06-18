@@ -34,5 +34,6 @@ python scripts/run_phase1_wanda_bcr_once.py \
   --data data/phase1/hh_rlhf_bcr_smoke.jsonl \
   --references outputs/phase1/bcr/reference_margins_smoke.jsonl \
   --max-samples 50 \
+  --save-pruned-model outputs/phase1/pruned_models/qwen2p5_7b_wanda_unstructured_0p30_smoke \
   --out-margins outputs/phase1/bcr/wanda_0p30_margins_smoke.jsonl \
   --out-metrics outputs/phase1/bcr/wanda_0p30_metrics_smoke.json

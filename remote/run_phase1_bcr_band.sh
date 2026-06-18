@@ -41,11 +41,17 @@ for sparsity in 0.30 0.40 0.50; do
     echo "skip existing $metrics"
     continue
   fi
+  pruned_model="outputs/phase1/pruned_models/qwen2p5_7b_wanda_unstructured_${tag}"
+  model_args=(--save-pruned-model "$pruned_model")
+  if [[ -d "$pruned_model" ]]; then
+    model_args=(--pruned-model "$pruned_model")
+  fi
   python scripts/run_phase1_wanda_bcr_once.py \
     --sparsity-ratio "$sparsity" \
     --data data/phase1/hh_rlhf_bcr_eval.jsonl \
     --references outputs/phase1/bcr/reference_margins.jsonl \
     --max-samples 1000 \
+    "${model_args[@]}" \
     --out-margins "$margins" \
     --out-metrics "$metrics"
 done

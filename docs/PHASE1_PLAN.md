@@ -181,3 +181,14 @@ cat outputs/phase1/bcr/wanda_0p50_metrics.json
 This BCR probe is not the full Phase 1 alignment suite, but it is the cheapest
 way to check whether preference boundary crossing appears in the likely
 operating band.
+
+The BCR band runner saves pruned checkpoints under:
+
+```text
+outputs/phase1/pruned_models/
+```
+
+Each 7B bf16 pruned checkpoint is roughly the size of the dense model. This is
+intentional for Phase 1: pruning is deterministic for a fixed seed/calibration
+sample, and saved checkpoints can be reused for XSTest-FPR, IFEval, TruthfulQA,
+and HarmBench/AdvBench instead of repeating Wanda.
