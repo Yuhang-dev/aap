@@ -11,6 +11,13 @@ import sys
 from pathlib import Path
 from typing import Any
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SRC_DIR = REPO_ROOT / "src"
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
+
+from aap.hf_cache import audit_model_cache
+
 
 def package_version(name: str) -> str | None:
     try:
@@ -88,18 +95,9 @@ def disk_report(path: str) -> dict[str, Any]:
 def model_cache_report(model_id: str) -> dict[str, Any]:
     hf_home = Path(os.environ.get("HF_HOME", str(Path.home() / ".cache" / "huggingface")))
     hub = Path(os.environ.get("HF_HUB_CACHE", str(hf_home / "hub")))
-    cache_name = "models--" + model_id.replace("/", "--")
-    model_dir = hub / cache_name
-    snapshots = model_dir / "snapshots"
-    snapshot_dirs = sorted([p.name for p in snapshots.iterdir()]) if snapshots.exists() else []
-    return {
-        "model_id": model_id,
-        "hub_cache": str(hub),
-        "cache_dir": str(model_dir),
-        "cache_dir_exists": model_dir.exists(),
-        "snapshot_count": len(snapshot_dirs),
-        "snapshots": snapshot_dirs[:5],
-    }
+    report = audit_model_cache(model_id, hub_cache=hub)
+    report["hub_cache"] = str(hub)
+    return report
 
 
 def main() -> None:
@@ -156,6 +154,7 @@ def main() -> None:
         "cuda_available": bool(report["torch_cuda"].get("cuda_available")),
         "nvidia_smi_ok": report["nvidia_smi"]["returncode"] == 0,
         "all_model_caches_present": all(item["cache_dir_exists"] for item in report["model_caches"]),
+        "all_model_weight_files_present": all(item["looks_complete"] for item in report["model_caches"]),
     }
     report["checks"] = checks
     report["ready_for_phase1_gpu"] = all(checks.values())
@@ -172,4 +171,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

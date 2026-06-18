@@ -36,7 +36,13 @@ Do not start the pruning/eval matrix unless:
 - `ready_for_phase1_gpu` is true;
 - `torch_cuda.cuda_available` is true;
 - `nvidia-smi` sees the 96 GB GPU;
-- both Qwen2.5-7B base and instruct caches are present.
+- both Qwen2.5-7B base and instruct caches have complete weight files.
+
+Audit model cache completeness directly:
+
+```bash
+python scripts/audit_hf_model_cache.py
+```
 
 Current preflight status:
 
