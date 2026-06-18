@@ -2,5 +2,6 @@
 set -euo pipefail
 
 cd /root/autodl-tmp/aap
-conda activate pbp
+source /root/autodl-tmp/aap/remote/common.sh
+activate_pbp_if_needed
 python -m pip install -e . --no-build-isolation

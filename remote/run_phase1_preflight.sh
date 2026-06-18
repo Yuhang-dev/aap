@@ -11,9 +11,9 @@ export TORCH_HOME="${TORCH_HOME:-$DATA_DISK/torch_cache}"
 export TOKENIZERS_PARALLELISM="${TOKENIZERS_PARALLELISM:-false}"
 
 cd "$AAP_ROOT"
-conda activate pbp
+source "$AAP_ROOT/remote/common.sh"
+activate_pbp_if_needed
 export PYTHONPATH="$AAP_ROOT/src:${PYTHONPATH:-}"
 
 python scripts/phase1_preflight.py \
   --out outputs/phase1_preflight.json
-
