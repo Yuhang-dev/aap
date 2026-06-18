@@ -203,6 +203,14 @@ The next Phase 1 step is QA benchmark confirmation on dense and the saved
 30/40/50 checkpoints. Do not advance to Phase 2 until QA and over-refusal
 guardrails are checked.
 
+QA benchmark scripts:
+
+```bash
+bash remote/run_phase1_qa_smoke.sh
+bash remote/run_phase1_qa_core.sh
+bash remote/summarize_phase1_qa.sh
+```
+
 The BCR band runner saves pruned checkpoints under:
 
 ```text

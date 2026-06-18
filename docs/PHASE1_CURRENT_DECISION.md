@@ -54,3 +54,25 @@ cat outputs/phase1/eval_preflight.json
 The installer keeps pip cache and any source checkout under `/root/autodl-tmp`.
 If the configured package mirror is missing dependencies such as `evaluate`, the
 installer retries with the official PyPI index.
+
+After `lm_eval_available=true`, run a small QA smoke:
+
+```bash
+bash remote/run_phase1_qa_smoke.sh
+```
+
+If the smoke passes, run the core QA confirmation:
+
+```bash
+bash remote/run_phase1_qa_core.sh
+bash remote/summarize_phase1_qa.sh
+cat outputs/phase1/qa_core_summary.csv
+```
+
+The core QA tasks are:
+
+```text
+arc_challenge, hellaswag, winogrande, mmlu
+```
+
+They are run on dense, 30%, 40%, and 50% checkpoints.
