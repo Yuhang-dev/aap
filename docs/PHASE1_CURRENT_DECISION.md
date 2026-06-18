@@ -43,3 +43,12 @@ environment:
 bash remote/run_phase1_eval_preflight.sh
 cat outputs/phase1/eval_preflight.json
 ```
+
+If `lm_eval_available` is false, install the HuggingFace backend:
+
+```bash
+bash remote/install_lm_eval.sh
+cat outputs/phase1/eval_preflight.json
+```
+
+The installer keeps pip cache and any source checkout under `/root/autodl-tmp`.

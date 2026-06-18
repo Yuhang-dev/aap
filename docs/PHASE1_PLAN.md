@@ -44,6 +44,15 @@ Audit model cache completeness directly:
 python scripts/audit_hf_model_cache.py
 ```
 
+Install `lm_eval` if missing:
+
+```bash
+bash remote/install_lm_eval.sh
+```
+
+The official harness currently installs HuggingFace support via the `hf`
+optional extra (`lm_eval[hf]`).
+
 Current preflight status:
 
 ```text
