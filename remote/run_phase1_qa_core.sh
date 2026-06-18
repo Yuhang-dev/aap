@@ -34,7 +34,7 @@ run_eval() {
     --model_args "pretrained=${pretrained},dtype=bfloat16,cache_dir=${HF_HUB_CACHE}" \
     --tasks arc_challenge,hellaswag,winogrande,mmlu \
     --num_fewshot 0 \
-    --batch_size auto:4 \
+    --batch_size 64 \
     --device cuda:0 \
     --trust_remote_code \
     --output_path "$out_dir"
@@ -44,4 +44,3 @@ run_eval "dense" "Qwen/Qwen2.5-7B-Instruct"
 run_eval "wanda_0p30" "outputs/phase1/pruned_models/qwen2p5_7b_wanda_unstructured_0p30"
 run_eval "wanda_0p40" "outputs/phase1/pruned_models/qwen2p5_7b_wanda_unstructured_0p40"
 run_eval "wanda_0p50" "outputs/phase1/pruned_models/qwen2p5_7b_wanda_unstructured_0p50"
-

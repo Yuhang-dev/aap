@@ -76,3 +76,6 @@ arc_challenge, hellaswag, winogrande, mmlu
 ```
 
 They are run on dense, 30%, 40%, and 50% checkpoints.
+
+The QA scripts use a fixed `--batch_size 64`, based on the successful smoke
+auto-batch probe. If a full run OOMs on long examples, lower this to `32`.
