@@ -27,3 +27,13 @@ Qwen/Qwen2.5-7B-Instruct
 Phase 0 is CPU-only and does not depend on Torch, CUDA, model caches, or
 datasets.
 
+All new downloads should remain under `/root/autodl-tmp`:
+
+```text
+project: /root/autodl-tmp/aap
+external repos: /root/autodl-tmp/aap/external
+HF_HOME: /root/autodl-tmp/hf_cache
+HF_HUB_CACHE: /root/autodl-tmp/hf_cache/hub
+HF_DATASETS_CACHE: /root/autodl-tmp/hf_cache/datasets
+TORCH_HOME: /root/autodl-tmp/torch_cache
+```

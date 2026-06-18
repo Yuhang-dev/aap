@@ -38,6 +38,63 @@ Do not start the pruning/eval matrix unless:
 - `nvidia-smi` sees the 96 GB GPU;
 - both Qwen2.5-7B base and instruct caches are present.
 
+Current preflight status:
+
+```text
+ready_for_phase1_gpu: true
+GPU: NVIDIA RTX PRO 6000 Blackwell Server Edition, 94.97 GiB
+python: /root/miniconda3/envs/pbp/bin/python
+cached: Qwen/Qwen2.5-7B, Qwen/Qwen2.5-7B-Instruct
+```
+
+## Wanda Setup
+
+The official Wanda repository is used as an external dependency and pinned to:
+
+```text
+https://github.com/locuslab/wanda.git
+8e8fc87b4a2f9955baa7e76e64d5fce7fa8724a6
+```
+
+All downloads and generated artifacts must stay under the data disk:
+
+```text
+/root/autodl-tmp
+```
+
+The setup script clones Wanda to:
+
+```text
+/root/autodl-tmp/aap/external/wanda
+```
+
+Hugging Face model and dataset downloads use:
+
+```text
+HF_HOME=/root/autodl-tmp/hf_cache
+HF_HUB_CACHE=/root/autodl-tmp/hf_cache/hub
+HF_DATASETS_CACHE=/root/autodl-tmp/hf_cache/datasets
+```
+
+Set it up on the remote machine:
+
+```bash
+bash remote/setup_wanda.sh
+```
+
+## First GPU Smoke
+
+Run one small Wanda job before the full sweep:
+
+```bash
+bash remote/run_phase1_wanda_smoke.sh
+cat outputs/phase1/wanda_smoke_qwen2p5_7b_10p.json
+```
+
+The smoke uses `nsamples=8` and `seqlen=2048`, prunes 10% unstructured weights,
+and evaluates WikiText-2 perplexity in the same process. It does not save a full
+pruned 7B model.
+
 ## Sweep
 
 Initial Phase 1 matrix:
@@ -56,4 +113,3 @@ Alignment: BCR, HarmBench or AdvBench, XSTest-FPR, IFEval, TruthfulQA
 ```
 
 AlpacaEval is deferred until Phase 3 decision points.
-

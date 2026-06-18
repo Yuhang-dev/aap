@@ -9,5 +9,5 @@ dist/
 *.egg-info/
 outputs/
 data/
+external/
 *.log
-
