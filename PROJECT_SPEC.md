@@ -39,3 +39,8 @@ Keep these methods distinct:
 Implement and run Phase 0. Do not start the large GPU matrix until the Phase 0
 gate is read.
 
+The default Phase 0 gate uses a task-budgeted comparison: among masks whose
+block-OBS task loss is within 5% of the greedy-OBS task loss, choose the mask
+with the best compensation-only alignment change. This isolates the theoretical
+claim that task-optimal OBS compensation can move remaining weights in an
+alignment-damaging direction.

@@ -34,6 +34,8 @@ def point_rows(points):
             "rho": point.rho,
             "angle_degrees": point.angle_degrees,
             "mean_gap": point.mean_gap,
+            "mean_total_gap": point.mean_total_gap,
+            "mean_compensation_gap": point.mean_compensation_gap,
             "median_gap": point.median_gap,
             "mean_relative_gap": point.mean_relative_gap,
             "mask_difference_rate": point.mask_difference_rate,
@@ -91,6 +93,9 @@ def main() -> None:
     substantial_gap = float(config.get("substantial_gap", 0.02))
     gate_min_gap = float(config.get("gate_min_gap", 0.02))
     gate_min_mask_diff_rate = float(config.get("gate_min_mask_diff_rate", 0.25))
+    selection_mode = str(config.get("selection_mode", "task_budget"))
+    alignment_metric = str(config.get("alignment_metric", "compensation"))
+    task_budget_multiplier = float(config.get("task_budget_multiplier", 1.05))
     rhos = parse_float_list(config.get("rhos"), "rhos")
     angles = parse_float_list(config.get("angles_degrees"), "angles_degrees")
     seeds = parse_int_list(config.get("seeds"), "seeds")
@@ -104,6 +109,9 @@ def main() -> None:
         beta=beta,
         condition_number=condition_number,
         substantial_gap=substantial_gap,
+        selection_mode=selection_mode,
+        alignment_metric=alignment_metric,
+        task_budget_multiplier=task_budget_multiplier,
     )
     summary = summarize_gate(
         points,
@@ -116,6 +124,9 @@ def main() -> None:
         "beta": beta,
         "condition_number": condition_number,
         "substantial_gap": substantial_gap,
+        "selection_mode": selection_mode,
+        "alignment_metric": alignment_metric,
+        "task_budget_multiplier": task_budget_multiplier,
         "rhos": rhos,
         "angles_degrees": angles,
         "seeds": seeds,
@@ -128,6 +139,8 @@ def main() -> None:
             "rho",
             "angle_degrees",
             "mean_gap",
+            "mean_total_gap",
+            "mean_compensation_gap",
             "median_gap",
             "mean_relative_gap",
             "mask_difference_rate",
@@ -136,6 +149,8 @@ def main() -> None:
         ],
     )
     write_heatmap_csv(out_dir / "gap_heatmap.csv", points, "mean_gap")
+    write_heatmap_csv(out_dir / "total_gap_heatmap.csv", points, "mean_total_gap")
+    write_heatmap_csv(out_dir / "compensation_gap_heatmap.csv", points, "mean_compensation_gap")
     write_heatmap_csv(out_dir / "mask_difference_heatmap.csv", points, "mask_difference_rate")
     write_json(out_dir / "phase0_summary.json", summary)
     plot_gap_heatmap(out_dir / "gap_heatmap.png", points, "mean_gap", "Phase 0 Alignment Gap")

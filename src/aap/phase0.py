@@ -13,6 +13,7 @@ class MaskEvaluation:
     removed: tuple[int, ...]
     task_loss: float
     alignment_change: float
+    compensation_alignment_change: float
     objective: float
 
 
@@ -21,6 +22,8 @@ class SweepPoint:
     rho: float
     angle_degrees: float
     mean_gap: float
+    mean_total_gap: float
+    mean_compensation_gap: float
     median_gap: float
     mean_relative_gap: float
     mask_difference_rate: float
@@ -98,18 +101,47 @@ def evaluate_removed_set(
     g_align: np.ndarray,
     removed: Iterable[int],
     beta: float,
+    objective_alignment_metric: str = "total",
 ) -> MaskEvaluation:
     removed_tuple = tuple(sorted(int(i) for i in removed))
     theta_star = block_obs_solution(theta, h_inv, removed_tuple)
     delta = theta_star - theta
+    compensation_delta = delta.copy()
+    compensation_delta[list(removed_tuple)] = 0.0
     task_loss = 0.5 * float(delta @ hessian @ delta)
     alignment_change = float(g_align @ delta)
-    objective = alignment_change + beta * task_loss
+    compensation_alignment_change = float(g_align @ compensation_delta)
+    objective = alignment_metric_value(
+        alignment_change,
+        compensation_alignment_change,
+        objective_alignment_metric,
+    ) + beta * task_loss
     return MaskEvaluation(
         removed=removed_tuple,
         task_loss=task_loss,
         alignment_change=alignment_change,
+        compensation_alignment_change=compensation_alignment_change,
         objective=objective,
+    )
+
+
+def alignment_metric_value(
+    alignment_change: float,
+    compensation_alignment_change: float,
+    metric: str,
+) -> float:
+    if metric == "total":
+        return alignment_change
+    if metric == "compensation":
+        return compensation_alignment_change
+    raise ValueError(f"unknown alignment metric: {metric}")
+
+
+def evaluation_alignment_metric(evaluation: MaskEvaluation, metric: str) -> float:
+    return alignment_metric_value(
+        evaluation.alignment_change,
+        evaluation.compensation_alignment_change,
+        metric,
     )
 
 
@@ -127,14 +159,58 @@ def optimal_alignment_mask(
     g_align: np.ndarray,
     k: int,
     beta: float,
+    alignment_metric: str,
 ) -> MaskEvaluation:
     best: MaskEvaluation | None = None
     for removed in combinations(range(theta.shape[0]), k):
-        score = evaluate_removed_set(theta, hessian, h_inv, g_align, removed, beta)
+        score = evaluate_removed_set(
+            theta,
+            hessian,
+            h_inv,
+            g_align,
+            removed,
+            beta,
+            objective_alignment_metric=alignment_metric,
+        )
         if best is None or score.objective < best.objective:
             best = score
     if best is None:
         raise RuntimeError("no candidate masks evaluated")
+    return best
+
+
+def optimal_alignment_mask_with_task_budget(
+    theta: np.ndarray,
+    hessian: np.ndarray,
+    h_inv: np.ndarray,
+    g_align: np.ndarray,
+    k: int,
+    beta: float,
+    alignment_metric: str,
+    task_budget: float,
+) -> MaskEvaluation:
+    best: MaskEvaluation | None = None
+    for removed in combinations(range(theta.shape[0]), k):
+        score = evaluate_removed_set(
+            theta,
+            hessian,
+            h_inv,
+            g_align,
+            removed,
+            beta,
+            objective_alignment_metric=alignment_metric,
+        )
+        if score.task_loss > task_budget:
+            continue
+        if best is None:
+            best = score
+            continue
+        score_metric = evaluation_alignment_metric(score, alignment_metric)
+        best_metric = evaluation_alignment_metric(best, alignment_metric)
+        if (score_metric, score.task_loss) < (best_metric, best.task_loss):
+            best = score
+    if best is None:
+        raise RuntimeError("no candidate masks inside task budget")
     return best
 
 
@@ -145,6 +221,9 @@ def run_single_trial(
     angle_degrees: float,
     beta: float,
     condition_number: float,
+    selection_mode: str,
+    alignment_metric: str,
+    task_budget_multiplier: float,
     rng: np.random.Generator,
 ) -> tuple[MaskEvaluation, MaskEvaluation]:
     hessian = make_coupled_hessian(dim=dim, rho=rho, condition_number=condition_number)
@@ -154,8 +233,38 @@ def run_single_trial(
     g_align = make_alignment_gradient(hessian, angle_degrees, rng)
 
     greedy_removed = greedy_obs_mask(theta, h_inv, k)
-    greedy_eval = evaluate_removed_set(theta, hessian, h_inv, g_align, greedy_removed, beta)
-    aware_eval = optimal_alignment_mask(theta, hessian, h_inv, g_align, k, beta)
+    greedy_eval = evaluate_removed_set(
+        theta,
+        hessian,
+        h_inv,
+        g_align,
+        greedy_removed,
+        beta,
+        objective_alignment_metric=alignment_metric,
+    )
+    if selection_mode == "beta":
+        aware_eval = optimal_alignment_mask(
+            theta,
+            hessian,
+            h_inv,
+            g_align,
+            k,
+            beta,
+            alignment_metric=alignment_metric,
+        )
+    elif selection_mode == "task_budget":
+        aware_eval = optimal_alignment_mask_with_task_budget(
+            theta,
+            hessian,
+            h_inv,
+            g_align,
+            k,
+            beta,
+            alignment_metric=alignment_metric,
+            task_budget=greedy_eval.task_loss * task_budget_multiplier + 1e-12,
+        )
+    else:
+        raise ValueError(f"unknown selection mode: {selection_mode}")
     return greedy_eval, aware_eval
 
 
@@ -168,11 +277,16 @@ def sweep_toy_gap(
     beta: float,
     condition_number: float,
     substantial_gap: float,
+    selection_mode: str,
+    alignment_metric: str,
+    task_budget_multiplier: float,
 ) -> list[SweepPoint]:
     points: list[SweepPoint] = []
     for rho in rhos:
         for angle in angles_degrees:
             gaps: list[float] = []
+            total_gaps: list[float] = []
+            compensation_gaps: list[float] = []
             relative_gaps: list[float] = []
             mask_diffs = 0
             substantial = 0
@@ -186,11 +300,24 @@ def sweep_toy_gap(
                     angle_degrees=float(angle),
                     beta=beta,
                     condition_number=condition_number,
+                    selection_mode=selection_mode,
+                    alignment_metric=alignment_metric,
+                    task_budget_multiplier=task_budget_multiplier,
                     rng=rng,
                 )
-                gap = greedy_eval.alignment_change - aware_eval.alignment_change
-                denominator = abs(greedy_eval.alignment_change) + 1e-12
+                total_gap = greedy_eval.alignment_change - aware_eval.alignment_change
+                compensation_gap = (
+                    greedy_eval.compensation_alignment_change
+                    - aware_eval.compensation_alignment_change
+                )
+                gap = evaluation_alignment_metric(greedy_eval, alignment_metric) - evaluation_alignment_metric(
+                    aware_eval,
+                    alignment_metric,
+                )
+                denominator = abs(evaluation_alignment_metric(greedy_eval, alignment_metric)) + 1e-12
                 gaps.append(gap)
+                total_gaps.append(total_gap)
+                compensation_gaps.append(compensation_gap)
                 relative_gaps.append(gap / denominator)
                 mask_diffs += int(greedy_eval.removed != aware_eval.removed)
                 substantial += int(gap > substantial_gap)
@@ -201,6 +328,8 @@ def sweep_toy_gap(
                     rho=float(rho),
                     angle_degrees=float(angle),
                     mean_gap=float(np.mean(gaps)),
+                    mean_total_gap=float(np.mean(total_gaps)),
+                    mean_compensation_gap=float(np.mean(compensation_gaps)),
                     median_gap=float(np.median(gaps)),
                     mean_relative_gap=float(np.mean(relative_gaps)),
                     mask_difference_rate=mask_diffs / seed_count,
@@ -245,4 +374,3 @@ def summarize_gate(points: list[SweepPoint], min_gap: float, min_mask_diff_rate:
             "bilevel mask-gap narrative without changing the evidence."
         ),
     }
-

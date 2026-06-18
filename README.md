@@ -54,6 +54,8 @@ Expected artifacts:
 outputs/phase0_toy_gap/
   phase0_summary.json
   gap_heatmap.csv
+  compensation_gap_heatmap.csv
+  total_gap_heatmap.csv
   mask_difference_heatmap.csv
   gap_heatmap.png
 ```
