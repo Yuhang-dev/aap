@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import random
 import sys
 import time
 from dataclasses import dataclass
@@ -151,18 +152,44 @@ def prepare_calibration_input(model, dataloader, device, nsamples: int):
     return inps, outs, cache["layer_kwargs"]
 
 
+def get_c4_calibration_loader(nsamples: int, seed: int, seqlen: int, tokenizer):
+    import torch
+    from datasets import load_dataset
+
+    dataset = load_dataset(
+        "allenai/c4",
+        "en",
+        data_files={"train": "en/c4-train.00000-of-01024.json.gz"},
+        split="train",
+    )
+
+    rng = random.Random(seed)
+    loader = []
+    for _ in range(nsamples):
+        while True:
+            row_idx = rng.randint(0, len(dataset) - 1)
+            encoded = tokenizer(dataset[row_idx]["text"], return_tensors="pt")
+            if encoded.input_ids.shape[1] > seqlen:
+                break
+        start = rng.randint(0, encoded.input_ids.shape[1] - seqlen - 1)
+        end = start + seqlen
+        inp = encoded.input_ids[:, start:end]
+        target = inp.clone()
+        target[:, :-1] = -100
+        loader.append((inp, target))
+    return loader
+
+
 def prune_wanda_aap(args, model, tokenizer, device, prune_n: int = 0, prune_m: int = 0) -> None:
     import torch
 
-    from lib.data import get_loaders
     from lib.layerwrapper import WrappedGPT
 
     use_cache = model.config.use_cache
     model.config.use_cache = False
 
     print("loading C4 calibration data")
-    dataloader, _ = get_loaders(
-        "c4",
+    dataloader = get_c4_calibration_loader(
         nsamples=args.nsamples,
         seed=args.seed,
         seqlen=model.seqlen,
@@ -340,4 +367,3 @@ def run_wanda(config: WandaRunConfig) -> dict[str, Any]:
         json.dump(result, f, indent=2, sort_keys=True)
         f.write("\n")
     return result
-
