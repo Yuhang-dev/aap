@@ -130,3 +130,18 @@ Alignment: BCR, HarmBench or AdvBench, XSTest-FPR, IFEval, TruthfulQA
 ```
 
 AlpacaEval is deferred until Phase 3 decision points.
+
+Run the first PPL-only sweep:
+
+```bash
+bash remote/run_phase1_wanda_ppl_sweep.sh
+cat outputs/phase1/wanda_ppl_sweep_summary.csv
+```
+
+This produces one JSON per sparsity under:
+
+```text
+outputs/phase1/wanda_ppl_sweep/
+```
+
+The script skips existing JSON outputs so it can be resumed after interruption.
