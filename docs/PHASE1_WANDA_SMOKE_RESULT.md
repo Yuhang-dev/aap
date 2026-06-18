@@ -49,3 +49,5 @@ The Phase 1 Wanda path is operational on Qwen2.5-7B-Instruct. The adapter can:
 
 Proceed to the Phase 1 sparsity sweep.
 
+The full sweep must include a dense PPL baseline before comparing pruning
+points.

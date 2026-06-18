@@ -18,6 +18,25 @@ export PYTHONPATH="$AAP_ROOT/src:${PYTHONPATH:-}"
 
 mkdir -p outputs/phase1/wanda_ppl_sweep
 
+dense_out="outputs/phase1/wanda_ppl_sweep/qwen2p5_7b_dense.json"
+if [[ ! -f "$dense_out" ]]; then
+  python scripts/run_phase1_wanda_once.py \
+    --wanda-dir external/wanda \
+    --model Qwen/Qwen2.5-7B-Instruct \
+    --cache-dir "$HF_HUB_CACHE" \
+    --dtype bfloat16 \
+    --seed 0 \
+    --nsamples 128 \
+    --seqlen 2048 \
+    --sparsity-ratio 0.0 \
+    --sparsity-type unstructured \
+    --prune-method wanda \
+    --eval-ppl \
+    --out "$dense_out"
+else
+  echo "skip existing $dense_out"
+fi
+
 for sparsity in 0.10 0.20 0.30 0.40 0.50 0.60 0.70; do
   tag="${sparsity/./p}"
   out="outputs/phase1/wanda_ppl_sweep/qwen2p5_7b_wanda_unstructured_${tag}.json"
@@ -62,4 +81,3 @@ fi
 python scripts/summarize_phase1_wanda_sweep.py \
   --input-dir outputs/phase1/wanda_ppl_sweep \
   --out outputs/phase1/wanda_ppl_sweep_summary.csv
-

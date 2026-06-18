@@ -145,3 +145,11 @@ outputs/phase1/wanda_ppl_sweep/
 ```
 
 The script skips existing JSON outputs so it can be resumed after interruption.
+
+The sweep includes a dense baseline:
+
+```text
+outputs/phase1/wanda_ppl_sweep/qwen2p5_7b_dense.json
+```
+
+Use this as the reference for the Phase 1 QA preservation gate.
