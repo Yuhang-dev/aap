@@ -2,7 +2,7 @@
 
 ## Current Milestone
 
-Milestone: Phase 1 Wanda sparsity sweep
+Milestone: Phase 1 QA/alignment confirmation
 Status: in_progress
 Last updated: 2026-06-19
 
@@ -17,11 +17,15 @@ Last updated: 2026-06-19
 - [x] Phase 1 GPU preflight command run.
 - [x] Phase 1 Wanda smoke run completed.
 - [ ] Phase 1 Wanda sparsity sweep completed.
+- [x] Phase 1 Wanda PPL sweep completed.
+- [x] Phase 1 HH-RLHF BCR band completed.
+- [ ] Phase 1 QA benchmark confirmation completed.
+- [ ] Phase 1 XSTest-FPR / over-refusal guardrail completed.
 
 ## Next Action
 
 Pull the latest project on `/root/autodl-tmp/aap`, then run:
 
 ```bash
-bash remote/run_phase1_wanda_ppl_sweep.sh
+# Next: add/run QA benchmark confirmation on dense and 30/40/50 pruned checkpoints.
 ```

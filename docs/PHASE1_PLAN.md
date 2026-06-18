@@ -182,6 +182,18 @@ This BCR probe is not the full Phase 1 alignment suite, but it is the cheapest
 way to check whether preference boundary crossing appears in the likely
 operating band.
 
+Current BCR band result:
+
+```text
+30%: BCR@q25 = 0.027, PPL = 7.712
+40%: BCR@q25 = 0.091, PPL = 8.113
+50%: BCR@q25 = 0.185, PPL = 9.198
+```
+
+The next Phase 1 step is QA benchmark confirmation on dense and the saved
+30/40/50 checkpoints. Do not advance to Phase 2 until QA and over-refusal
+guardrails are checked.
+
 The BCR band runner saves pruned checkpoints under:
 
 ```text
