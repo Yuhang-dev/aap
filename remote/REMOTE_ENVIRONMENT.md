@@ -36,4 +36,5 @@ HF_HOME: /root/autodl-tmp/hf_cache
 HF_HUB_CACHE: /root/autodl-tmp/hf_cache/hub
 HF_DATASETS_CACHE: /root/autodl-tmp/hf_cache/datasets
 TORCH_HOME: /root/autodl-tmp/torch_cache
+HF_XET_CACHE: /root/autodl-tmp/hf_cache/xet
 ```

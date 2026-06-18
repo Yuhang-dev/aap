@@ -13,6 +13,7 @@ export OMP_NUM_THREADS=8
 
 cd "$AAP_ROOT"
 source "$AAP_ROOT/remote/common.sh"
+configure_hf_transfer_env
 activate_pbp_if_needed
 export PYTHONPATH="$AAP_ROOT/src:${PYTHONPATH:-}"
 
@@ -35,4 +36,3 @@ python scripts/run_phase1_wanda_bcr_once.py \
   --max-samples 50 \
   --out-margins outputs/phase1/bcr/wanda_0p30_margins_smoke.jsonl \
   --out-metrics outputs/phase1/bcr/wanda_0p30_metrics_smoke.json
-

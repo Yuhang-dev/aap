@@ -18,3 +18,15 @@ activate_pbp_if_needed() {
   conda activate pbp
 }
 
+configure_hf_transfer_env() {
+  export DATA_DISK="${DATA_DISK:-/root/autodl-tmp}"
+  export HF_HOME="${HF_HOME:-$DATA_DISK/hf_cache}"
+  export HF_HUB_CACHE="${HF_HUB_CACHE:-$HF_HOME/hub}"
+  export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-$HF_HOME/datasets}"
+  export TRANSFORMERS_CACHE="${TRANSFORMERS_CACHE:-$HF_HOME/transformers}"
+  export TORCH_HOME="${TORCH_HOME:-$DATA_DISK/torch_cache}"
+  export HF_XET_CACHE="${HF_XET_CACHE:-$HF_HOME/xet}"
+  export HF_XET_HIGH_PERFORMANCE="${HF_XET_HIGH_PERFORMANCE:-1}"
+  export HF_HUB_DOWNLOAD_TIMEOUT="${HF_HUB_DOWNLOAD_TIMEOUT:-60}"
+  export TOKENIZERS_PARALLELISM="${TOKENIZERS_PARALLELISM:-false}"
+}

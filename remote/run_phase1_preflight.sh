@@ -12,6 +12,7 @@ export TOKENIZERS_PARALLELISM="${TOKENIZERS_PARALLELISM:-false}"
 
 cd "$AAP_ROOT"
 source "$AAP_ROOT/remote/common.sh"
+configure_hf_transfer_env
 activate_pbp_if_needed
 export PYTHONPATH="$AAP_ROOT/src:${PYTHONPATH:-}"
 

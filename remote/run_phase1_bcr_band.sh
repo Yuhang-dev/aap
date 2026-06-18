@@ -13,6 +13,7 @@ export OMP_NUM_THREADS=8
 
 cd "$AAP_ROOT"
 source "$AAP_ROOT/remote/common.sh"
+configure_hf_transfer_env
 activate_pbp_if_needed
 export PYTHONPATH="$AAP_ROOT/src:${PYTHONPATH:-}"
 
@@ -48,4 +49,3 @@ for sparsity in 0.30 0.40 0.50; do
     --out-margins "$margins" \
     --out-metrics "$metrics"
 done
-
