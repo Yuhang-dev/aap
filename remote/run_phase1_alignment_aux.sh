@@ -60,12 +60,19 @@ run_eval() {
   local name="$2"
   local tasks="$3"
   local out_dir="outputs/phase1/${suite}/${name}"
+  local existing_result
   local model
   model="$(model_for_name "$name")"
+  existing_result="$(find "$out_dir" -type f -name 'results_*.json' -print -quit 2>/dev/null || true)"
 
-  if [[ -d "$out_dir" ]]; then
-    echo "skip existing $out_dir"
+  if [[ -n "$existing_result" ]]; then
+    echo "skip existing $existing_result"
     return 0
+  fi
+
+  local chat_template_args=()
+  if [[ "$suite" == "ifeval" ]]; then
+    chat_template_args=(--apply_chat_template)
   fi
 
   python -m lm_eval run \
@@ -76,6 +83,7 @@ run_eval() {
     --batch_size "$BATCH_SIZE" \
     --device cuda:0 \
     --trust_remote_code \
+    "${chat_template_args[@]}" \
     --output_path "$out_dir"
 }
 
