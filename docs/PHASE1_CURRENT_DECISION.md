@@ -54,6 +54,8 @@ cat outputs/phase1/eval_preflight.json
 The installer keeps pip cache and any source checkout under `/root/autodl-tmp`.
 If the configured package mirror is missing dependencies such as `evaluate`, the
 installer retries with the official PyPI index.
+It also installs IFEval optional dependencies (`langdetect`, `immutabledict`)
+and stores NLTK data under `/root/autodl-tmp/nltk_data`.
 
 After `lm_eval_available=true`, run a small QA smoke:
 

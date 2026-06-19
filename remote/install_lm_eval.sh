@@ -9,6 +9,7 @@ export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-$HF_HOME/datasets}"
 export TRANSFORMERS_CACHE="${TRANSFORMERS_CACHE:-$HF_HOME/transformers}"
 export TORCH_HOME="${TORCH_HOME:-$DATA_DISK/torch_cache}"
 export PIP_CACHE_DIR="${PIP_CACHE_DIR:-$DATA_DISK/pip_cache}"
+export NLTK_DATA="${NLTK_DATA:-$DATA_DISK/nltk_data}"
 export TOKENIZERS_PARALLELISM="${TOKENIZERS_PARALLELISM:-false}"
 
 cd "$AAP_ROOT"
@@ -16,7 +17,7 @@ source "$AAP_ROOT/remote/common.sh"
 configure_hf_transfer_env
 activate_pbp_if_needed
 
-mkdir -p "$PIP_CACHE_DIR" "$AAP_ROOT/external"
+mkdir -p "$PIP_CACHE_DIR" "$NLTK_DATA" "$AAP_ROOT/external"
 
 install_with_current_index() {
   python -m pip install "$@"
@@ -56,5 +57,31 @@ if [[ "$status" -ne 0 ]]; then
     install_with_pypi_index -e "$lm_eval_dir[hf]" --no-build-isolation
   fi
 fi
+
+set +e
+install_with_current_index langdetect immutabledict
+status=$?
+set -e
+
+if [[ "$status" -ne 0 ]]; then
+  echo "optional IFEval dependency install failed on the configured index; retrying with official PyPI"
+  install_with_pypi_index langdetect immutabledict
+fi
+
+python - <<'PY'
+import os
+
+import nltk
+
+download_dir = os.environ.get("NLTK_DATA")
+if download_dir:
+    nltk.download("punkt_tab", download_dir=download_dir, quiet=True)
+
+import langdetect  # noqa: F401
+import immutabledict  # noqa: F401
+from lm_eval.tasks.ifeval import instructions, instructions_registry, utils  # noqa: F401
+
+print("IFEval optional dependencies are importable")
+PY
 
 python scripts/phase1_eval_preflight.py

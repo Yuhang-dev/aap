@@ -8,6 +8,8 @@ export HF_HUB_CACHE="${HF_HUB_CACHE:-$HF_HOME/hub}"
 export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-$HF_HOME/datasets}"
 export TRANSFORMERS_CACHE="${TRANSFORMERS_CACHE:-$HF_HOME/transformers}"
 export TORCH_HOME="${TORCH_HOME:-$DATA_DISK/torch_cache}"
+export PIP_CACHE_DIR="${PIP_CACHE_DIR:-$DATA_DISK/pip_cache}"
+export NLTK_DATA="${NLTK_DATA:-$DATA_DISK/nltk_data}"
 export LM_HARNESS_CACHE_PATH="${LM_HARNESS_CACHE_PATH:-$AAP_ROOT/outputs/lm_eval_cache}"
 export TOKENIZERS_PARALLELISM="${TOKENIZERS_PARALLELISM:-false}"
 export OMP_NUM_THREADS="${OMP_NUM_THREADS:-8}"
@@ -25,7 +27,16 @@ python -c "import lm_eval" >/dev/null 2>&1 || {
   exit 1
 }
 
-mkdir -p outputs/phase1/ifeval outputs/phase1/truthfulqa outputs/lm_eval_cache
+mkdir -p "$PIP_CACHE_DIR" "$NLTK_DATA" outputs/phase1/ifeval outputs/phase1/truthfulqa outputs/lm_eval_cache
+
+python - <<'PY' >/dev/null 2>&1 || {
+  echo "IFEval optional dependencies are missing. Run: bash remote/install_lm_eval.sh" >&2
+  exit 1
+}
+import langdetect  # noqa: F401
+import immutabledict  # noqa: F401
+from lm_eval.tasks.ifeval import instructions, instructions_registry, utils  # noqa: F401
+PY
 
 model_for_name() {
   case "$1" in

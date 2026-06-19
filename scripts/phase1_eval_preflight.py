@@ -18,6 +18,8 @@ def main() -> None:
         "accelerate_available": module_available("accelerate"),
         "transformers_available": module_available("transformers"),
         "datasets_available": module_available("datasets"),
+        "langdetect_available": module_available("langdetect"),
+        "immutabledict_available": module_available("immutabledict"),
         "lm_eval_cli": shutil.which("lm_eval"),
         "lm_eval_module": shutil.which("lm-eval"),
     }
@@ -29,4 +31,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

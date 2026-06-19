@@ -28,5 +28,7 @@ configure_hf_transfer_env() {
   export HF_XET_CACHE="${HF_XET_CACHE:-$HF_HOME/xet}"
   export HF_XET_HIGH_PERFORMANCE="${HF_XET_HIGH_PERFORMANCE:-1}"
   export HF_HUB_DOWNLOAD_TIMEOUT="${HF_HUB_DOWNLOAD_TIMEOUT:-60}"
+  export PIP_CACHE_DIR="${PIP_CACHE_DIR:-$DATA_DISK/pip_cache}"
+  export NLTK_DATA="${NLTK_DATA:-$DATA_DISK/nltk_data}"
   export TOKENIZERS_PARALLELISM="${TOKENIZERS_PARALLELISM:-false}"
 }
