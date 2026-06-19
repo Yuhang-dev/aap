@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import random
 import sys
 import time
@@ -429,6 +430,7 @@ def load_model_and_tokenizer(config: WandaRunConfig):
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     dtype = torch_dtype_from_name(config.dtype)
+    local_files_only = os.environ.get("AAP_LOCAL_FILES_ONLY", "").lower() in {"1", "true", "yes"}
     model_kwargs: dict[str, Any] = {
         "torch_dtype": dtype,
         "low_cpu_mem_usage": True,
@@ -436,9 +438,12 @@ def load_model_and_tokenizer(config: WandaRunConfig):
     }
     if config.cache_dir:
         model_kwargs["cache_dir"] = config.cache_dir
+    if local_files_only:
+        model_kwargs["local_files_only"] = True
 
-    print(f"loading model {config.model}")
+    print(f"loading model {config.model}", flush=True)
     model = AutoModelForCausalLM.from_pretrained(config.model, **model_kwargs)
+    print("model weights loaded", flush=True)
     max_position_embeddings = int(getattr(model.config, "max_position_embeddings", config.seqlen))
     model.seqlen = min(max_position_embeddings, config.seqlen)
     model.eval()
@@ -446,9 +451,13 @@ def load_model_and_tokenizer(config: WandaRunConfig):
     tokenizer_kwargs: dict[str, Any] = {"use_fast": False}
     if config.cache_dir:
         tokenizer_kwargs["cache_dir"] = config.cache_dir
+    if local_files_only:
+        tokenizer_kwargs["local_files_only"] = True
+    print(f"loading tokenizer {config.model}", flush=True)
     tokenizer = AutoTokenizer.from_pretrained(config.model, **tokenizer_kwargs)
     if tokenizer.pad_token is None and tokenizer.eos_token is not None:
         tokenizer.pad_token = tokenizer.eos_token
+    print("tokenizer loaded", flush=True)
     return model, tokenizer
 
 
