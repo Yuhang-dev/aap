@@ -16,6 +16,7 @@ PHASE2_ROOT="${PHASE2_ROOT:-outputs/phase2}"
 PHASE2_NSAMPLES="${PHASE2_NSAMPLES:-128}"
 PHASE2_MAX_SAMPLES="${PHASE2_MAX_SAMPLES:-1000}"
 PHASE2_PPL_MAX_SAMPLES="${PHASE2_PPL_MAX_SAMPLES:-16}"
+PHASE2_KEEP_MODELS="${PHASE2_KEEP_MODELS:-chosen}"
 
 cd "$AAP_ROOT"
 source "$AAP_ROOT/remote/common.sh"
@@ -94,6 +95,25 @@ run_variant() {
       --ppl-max-samples "$PHASE2_PPL_MAX_SAMPLES" \
       --out "$ppl"
   fi
+
+  case "$PHASE2_KEEP_MODELS" in
+    all)
+      ;;
+    chosen)
+      if [[ "$tag" != maca_chosen_* ]]; then
+        echo "delete control checkpoint after metrics/PPL: $model_dir"
+        rm -rf "$model_dir"
+      fi
+      ;;
+    none)
+      echo "delete checkpoint after metrics/PPL: $model_dir"
+      rm -rf "$model_dir"
+      ;;
+    *)
+      echo "unknown PHASE2_KEEP_MODELS=$PHASE2_KEEP_MODELS; expected all/chosen/none" >&2
+      exit 1
+      ;;
+  esac
 }
 
 # Experiment A: alignment-specificity versus instruction-domain matching.
