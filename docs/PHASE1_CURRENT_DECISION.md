@@ -112,3 +112,15 @@ The CSV focuses on safe prompts that newly become refusals under pruning, safe
 prompts flagged as refusals by the heuristic, unsafe prompts that lose refusal,
 and random calibration examples. Fill `manual_refusal` and `manual_notes` during
 review.
+
+Then run the auxiliary alignment checks:
+
+```bash
+bash remote/run_phase1_alignment_aux.sh
+```
+
+This runs `ifeval` and `truthfulqa_mc1,truthfulqa_mc2` on dense, 30%, 40%, and
+50% checkpoints. Treat these as control axes: if BCR rises while IFEval and
+TruthfulQA remain comparatively stable, the evidence favors
+preference-boundary-specific degradation rather than generic instruction
+following or truthfulness collapse.
