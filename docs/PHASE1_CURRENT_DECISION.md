@@ -126,3 +126,16 @@ This runs `ifeval` and `truthfulqa_mc1,truthfulqa_mc2` on dense, 30%, 40%, and
 TruthfulQA remain comparatively stable, the evidence favors
 preference-boundary-specific degradation rather than generic instruction
 following or truthfulness collapse.
+
+After the full Phase 1 suite finishes, create the integrated summary table:
+
+```bash
+bash remote/summarize_phase1_all.sh
+```
+
+This writes:
+
+```text
+outputs/phase1/phase1_full_summary.csv
+outputs/phase1/phase1_full_summary.json
+```
