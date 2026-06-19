@@ -32,6 +32,13 @@ def main() -> None:
     parser.add_argument("--sparsity-ratio", type=float, required=True)
     parser.add_argument("--sparsity-type", default="unstructured", choices=["unstructured", "2:4", "4:8"])
     parser.add_argument("--prune-method", default="wanda", choices=["wanda", "magnitude", "sparsegpt"])
+    parser.add_argument(
+        "--calibration-source",
+        default="c4",
+        choices=["c4", "hh_chosen", "hh_rejected", "hh_pair"],
+        help="Calibration text source for Wanda/M-ACA runs.",
+    )
+    parser.add_argument("--calibration-data", default=None, help="Preference JSONL for HH calibration sources.")
     parser.add_argument("--use-variant", action="store_true")
     parser.add_argument("--eval-ppl", action="store_true")
     parser.add_argument("--ppl-max-samples", type=int, default=None)
@@ -55,6 +62,8 @@ def main() -> None:
         ppl_max_samples=args.ppl_max_samples,
         save_model=optional_path(args.save_model),
         out=Path(args.out),
+        calibration_source=args.calibration_source,
+        calibration_data=optional_path(args.calibration_data),
     )
     result = run_wanda(config)
     print(json.dumps(result, indent=2, sort_keys=True))

@@ -2,7 +2,7 @@
 
 ## Current Milestone
 
-Milestone: Phase 1 QA/alignment confirmation
+Milestone: Phase 2 alignment-specificity and high-sparsity comparison
 Status: in_progress
 Last updated: 2026-06-19
 
@@ -16,16 +16,21 @@ Last updated: 2026-06-19
 - [x] Phase 0 gate decision recorded.
 - [x] Phase 1 GPU preflight command run.
 - [x] Phase 1 Wanda smoke run completed.
-- [ ] Phase 1 Wanda sparsity sweep completed.
+- [x] Phase 1 Wanda sparsity sweep completed.
 - [x] Phase 1 Wanda PPL sweep completed.
 - [x] Phase 1 HH-RLHF BCR band completed.
-- [ ] Phase 1 QA benchmark confirmation completed.
-- [ ] Phase 1 XSTest-FPR / over-refusal guardrail completed.
+- [x] Phase 1 QA benchmark confirmation completed.
+- [x] Phase 1 XSTest-FPR / over-refusal guardrail completed.
+- [x] Phase 1 IFEval / TruthfulQA auxiliary checks completed.
+- [x] Phase 1 integrated summary generated.
+- [ ] Phase 2 key experiment smoke completed.
+- [ ] Phase 2 BCR/PPL key experiments completed.
+- [ ] Phase 2 QA confirmation completed if BCR/PPL warrants it.
 
 ## Next Action
 
 Pull the latest project on `/root/autodl-tmp/aap`, then run:
 
 ```bash
-# Next: add/run QA benchmark confirmation on dense and 30/40/50 pruned checkpoints.
+bash remote/run_phase2_key_smoke.sh
 ```

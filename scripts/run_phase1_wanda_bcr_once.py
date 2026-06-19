@@ -62,6 +62,13 @@ def main() -> None:
     parser.add_argument("--seqlen", type=int, default=2048)
     parser.add_argument("--sparsity-ratio", type=float, required=True)
     parser.add_argument("--sparsity-type", default="unstructured", choices=["unstructured", "2:4", "4:8"])
+    parser.add_argument(
+        "--calibration-source",
+        default="c4",
+        choices=["c4", "hh_chosen", "hh_rejected", "hh_pair"],
+        help="Calibration source for Wanda/M-ACA pruning.",
+    )
+    parser.add_argument("--calibration-data", default=None, help="Preference JSONL used by HH calibration sources.")
     parser.add_argument("--data", default="data/phase1/hh_rlhf_bcr_eval.jsonl")
     parser.add_argument("--references", default="outputs/phase1/bcr/reference_margins.jsonl")
     parser.add_argument("--max-samples", type=int, default=None)
@@ -97,6 +104,8 @@ def main() -> None:
             ppl_max_samples=None,
             save_model=None,
             out=Path(args.out_metrics),
+            calibration_source=args.calibration_source,
+            calibration_data=Path(args.calibration_data) if args.calibration_data else None,
         )
         model, tokenizer = load_model_and_tokenizer(config)
 
@@ -113,6 +122,8 @@ def main() -> None:
             prune_args.prune_method = "wanda"
             prune_args.cache_dir = args.cache_dir
             prune_args.use_variant = False
+            prune_args.calibration_source = args.calibration_source
+            prune_args.calibration_data = args.calibration_data
             prune_wanda_aap(prune_args, model, tokenizer, model_device(model), prune_n=prune_n, prune_m=prune_m)
 
         actual_sparsity = check_sparsity(model)
@@ -173,6 +184,8 @@ def main() -> None:
             "num_eval_examples": len(records),
             "pruned_model": args.pruned_model,
             "saved_pruned_model": args.save_pruned_model,
+            "calibration_source": args.calibration_source,
+            "calibration_data": args.calibration_data,
         }
     )
     write_json(args.out_metrics, metrics)

@@ -35,6 +35,8 @@ class WandaRunConfig:
     ppl_max_samples: int | None
     save_model: Path | None
     out: Path
+    calibration_source: str = "c4"
+    calibration_data: Path | None = None
 
 
 def torch_dtype_from_name(name: str):
@@ -193,6 +195,101 @@ def get_c4_calibration_loader(nsamples: int, seed: int, seqlen: int, tokenizer):
     return loader
 
 
+def build_segment_loader_from_texts(texts: list[str], nsamples: int, seed: int, seqlen: int, tokenizer):
+    import torch
+
+    rng = random.Random(seed)
+    shuffled = [text for text in texts if text.strip()]
+    if not shuffled:
+        raise RuntimeError("no non-empty calibration texts")
+    rng.shuffle(shuffled)
+
+    eos_id = tokenizer.eos_token_id
+    if eos_id is None:
+        eos_id = tokenizer.pad_token_id
+    if eos_id is None:
+        raise RuntimeError("tokenizer has neither eos_token_id nor pad_token_id")
+
+    required_tokens = nsamples * seqlen + seqlen
+    token_ids: list[int] = []
+    passes = 0
+    while len(token_ids) < required_tokens and passes < max(8, nsamples):
+        passes += 1
+        for text in shuffled:
+            encoded = tokenizer(text, add_special_tokens=False).input_ids
+            if encoded:
+                token_ids.extend(encoded)
+                token_ids.append(int(eos_id))
+            if len(token_ids) >= required_tokens:
+                break
+
+    if len(token_ids) < seqlen:
+        raise RuntimeError(f"preference calibration text is too short: {len(token_ids)} tokens < seqlen={seqlen}")
+
+    max_start = len(token_ids) - seqlen
+    if max_start < nsamples:
+        starts = [0 for _ in range(nsamples)]
+    else:
+        starts = [rng.randint(0, max_start) for _ in range(nsamples)]
+
+    loader = []
+    token_tensor = torch.tensor(token_ids, dtype=torch.long)
+    for start in starts:
+        inp = token_tensor[start : start + seqlen].unsqueeze(0)
+        target = inp.clone()
+        target[:, :-1] = -100
+        loader.append((inp, target))
+    return loader
+
+
+def get_preference_calibration_loader(
+    nsamples: int,
+    seed: int,
+    seqlen: int,
+    tokenizer,
+    data_path: str | Path,
+    source: str,
+):
+    from aap.preference_data import read_preference_jsonl
+
+    records = read_preference_jsonl(data_path)
+    texts: list[str] = []
+    for record in records:
+        if source == "hh_chosen":
+            texts.append(record.prompt + record.chosen)
+        elif source == "hh_rejected":
+            texts.append(record.prompt + record.rejected)
+        elif source == "hh_pair":
+            texts.append(record.prompt + record.chosen)
+            texts.append(record.prompt + record.rejected)
+        else:
+            raise ValueError(f"unsupported preference calibration source: {source}")
+    return build_segment_loader_from_texts(texts, nsamples, seed, seqlen, tokenizer)
+
+
+def get_calibration_loader(args, nsamples: int, seed: int, seqlen: int, tokenizer):
+    source = getattr(args, "calibration_source", "c4")
+    if source == "c4":
+        return get_c4_calibration_loader(
+            nsamples=nsamples,
+            seed=seed,
+            seqlen=seqlen,
+            tokenizer=tokenizer,
+        )
+
+    data_path = getattr(args, "calibration_data", None)
+    if not data_path:
+        raise ValueError(f"calibration source {source!r} requires --calibration-data")
+    return get_preference_calibration_loader(
+        nsamples=nsamples,
+        seed=seed,
+        seqlen=seqlen,
+        tokenizer=tokenizer,
+        data_path=data_path,
+        source=source,
+    )
+
+
 def load_wikitext2_test_encoding(tokenizer, cache_dir: str | None = None):
     from datasets import load_dataset
     from huggingface_hub import hf_hub_download
@@ -250,8 +347,10 @@ def prune_wanda_aap(args, model, tokenizer, device, prune_n: int = 0, prune_m: i
     use_cache = model.config.use_cache
     model.config.use_cache = False
 
-    print("loading C4 calibration data")
-    dataloader = get_c4_calibration_loader(
+    calibration_source = getattr(args, "calibration_source", "c4")
+    print(f"loading {calibration_source} calibration data")
+    dataloader = get_calibration_loader(
+        args,
         nsamples=args.nsamples,
         seed=args.seed,
         seqlen=model.seqlen,
@@ -385,6 +484,8 @@ def run_wanda(config: WandaRunConfig) -> dict[str, Any]:
     args.prune_method = config.prune_method
     args.cache_dir = config.cache_dir
     args.use_variant = config.use_variant
+    args.calibration_source = config.calibration_source
+    args.calibration_data = str(config.calibration_data) if config.calibration_data else None
 
     started = time.time()
     if config.sparsity_ratio:
@@ -431,6 +532,8 @@ def run_wanda(config: WandaRunConfig) -> dict[str, Any]:
         "runtime_seconds": time.time() - started,
         "saved_model": str(config.save_model) if config.save_model else None,
         "wanda_dir": str(config.wanda_dir),
+        "calibration_source": config.calibration_source,
+        "calibration_data": str(config.calibration_data) if config.calibration_data else None,
     }
     config.out.parent.mkdir(parents=True, exist_ok=True)
     with config.out.open("w", encoding="utf-8") as f:
