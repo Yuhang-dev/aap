@@ -91,3 +91,21 @@ The XSTest runner reports `xstest_fpr` on safe prompts and
 `unsafe_refusal_rate` on unsafe contrast prompts using a string refusal
 heuristic. This is the first-pass guardrail; inspect saved JSONL responses if
 the heuristic looks suspicious.
+
+Export a manual review sheet after XSTest core:
+
+```bash
+bash remote/export_phase1_xstest_review.sh
+```
+
+This creates:
+
+```text
+outputs/phase1/xstest_core/xstest_manual_review.csv
+outputs/phase1/xstest_core/xstest_manual_review_summary.json
+```
+
+The CSV focuses on safe prompts that newly become refusals under pruning, safe
+prompts flagged as refusals by the heuristic, unsafe prompts that lose refusal,
+and random calibration examples. Fill `manual_refusal` and `manual_notes` during
+review.
