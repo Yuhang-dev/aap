@@ -57,12 +57,25 @@ def infer_prompt_type(row: dict[str, Any]) -> str:
     return "unknown"
 
 
-def load_xstest(max_samples: int | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+def load_xstest_dataset():
     from datasets import load_dataset
 
-    dataset = load_dataset("paul-rottger/xstest", split="test")
+    errors = {}
+    for dataset_id in ["Paul/XSTest", "walledai/XSTest"]:
+        for split in ["test", "train"]:
+            try:
+                return dataset_id, split, load_dataset(dataset_id, split=split)
+            except Exception as exc:
+                errors[f"{dataset_id}:{split}"] = repr(exc)
+    raise RuntimeError(f"could not load XSTest from known dataset IDs: {errors}")
+
+
+def load_xstest(max_samples: int | None = None) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+    dataset_id, split, dataset = load_xstest_dataset()
     rows = []
     schema = {
+        "dataset_id": dataset_id,
+        "split": split,
         "columns": list(dataset.column_names),
         "num_total": len(dataset),
     }
@@ -222,4 +235,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

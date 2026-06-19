@@ -92,6 +92,9 @@ The XSTest runner reports `xstest_fpr` on safe prompts and
 heuristic. This is the first-pass guardrail; inspect saved JSONL responses if
 the heuristic looks suspicious.
 
+The runner loads XSTest from `Paul/XSTest` on Hugging Face, with `walledai/XSTest`
+as a fallback mirror.
+
 Export a manual review sheet after XSTest core:
 
 ```bash
