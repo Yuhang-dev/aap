@@ -29,14 +29,10 @@ python -c "import lm_eval" >/dev/null 2>&1 || {
 
 mkdir -p "$PIP_CACHE_DIR" "$NLTK_DATA" outputs/phase1/ifeval outputs/phase1/truthfulqa outputs/lm_eval_cache
 
-python - <<'PY' >/dev/null 2>&1 || {
+python -c "import langdetect, immutabledict; from lm_eval.tasks.ifeval import instructions, instructions_registry, utils" >/dev/null 2>&1 || {
   echo "IFEval optional dependencies are missing. Run: bash remote/install_lm_eval.sh" >&2
   exit 1
 }
-import langdetect  # noqa: F401
-import immutabledict  # noqa: F401
-from lm_eval.tasks.ifeval import instructions, instructions_registry, utils  # noqa: F401
-PY
 
 model_for_name() {
   case "$1" in
