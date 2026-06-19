@@ -10,8 +10,14 @@ from typing import Any
 
 
 def read_jsonl(path: str | Path) -> list[dict[str, Any]]:
+    source = Path(path)
+    if not source.exists():
+        raise FileNotFoundError(
+            f"Missing XSTest response file: {source}. "
+            "Run `bash remote/run_phase1_xstest_core.sh` before exporting the review sheet."
+        )
     rows = []
-    with Path(path).open("r", encoding="utf-8") as f:
+    with source.open("r", encoding="utf-8") as f:
         for line in f:
             if line.strip():
                 rows.append(json.loads(line))
@@ -194,4 +200,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-
