@@ -79,3 +79,15 @@ They are run on dense, 30%, 40%, and 50% checkpoints.
 
 The QA scripts use a fixed `--batch_size 64`, based on the successful smoke
 auto-batch probe. If a full run OOMs on long examples, lower this to `32`.
+
+After QA, run the mandatory over-refusal guardrail:
+
+```bash
+bash remote/run_phase1_xstest_smoke.sh
+bash remote/run_phase1_xstest_core.sh
+```
+
+The XSTest runner reports `xstest_fpr` on safe prompts and
+`unsafe_refusal_rate` on unsafe contrast prompts using a string refusal
+heuristic. This is the first-pass guardrail; inspect saved JSONL responses if
+the heuristic looks suspicious.
